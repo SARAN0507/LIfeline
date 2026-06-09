@@ -1,0 +1,144 @@
+{
+  "donors": [
+    {
+      "id": "d1",
+      "name": "Ravi Kumar",
+      "bloodGroup": "O-",
+      "city": "Bengaluru",
+      "phone": "+91 98765 43210",
+      "email": "ravi.kumar@example.com",
+      "lastDonationDate": "2026-03-10",
+      "available": true,
+      "distance": "2 km"
+    },
+    {
+      "id": "d2",
+      "name": "Anita Sharma",
+      "bloodGroup": "O-",
+      "city": "Bengaluru",
+      "phone": "+91 87654 32109",
+      "email": "anita.s@example.com",
+      "lastDonationDate": "2026-04-15",
+      "available": true,
+      "distance": "3 km"
+    },
+    {
+      "id": "d3",
+      "name": "Vikram Singh",
+      "bloodGroup": "A+",
+      "city": "Bengaluru",
+      "phone": "+91 76543 21098",
+      "email": "vikram.s@example.com",
+      "lastDonationDate": "2026-05-01",
+      "available": true,
+      "distance": "4 km"
+    },
+    {
+      "id": "d4",
+      "name": "Priyanka Patel",
+      "bloodGroup": "B+",
+      "city": "Mumbai",
+      "phone": "+91 91234 56789",
+      "email": "priyanka.p@example.com",
+      "lastDonationDate": "2025-12-12",
+      "available": true,
+      "distance": "1.5 km"
+    },
+    {
+      "id": "d5",
+      "name": "Rahul Verma",
+      "bloodGroup": "AB+",
+      "city": "Delhi",
+      "phone": "+91 99887 76655",
+      "email": "rahul.v@example.com",
+      "lastDonationDate": "2026-01-20",
+      "available": true,
+      "distance": "5 km"
+    },
+    {
+      "id": "d6",
+      "name": "Siddharth Das",
+      "bloodGroup": "O+",
+      "city": "Bengaluru",
+      "phone": "+91 94432 12345",
+      "email": "sid.das@example.com",
+      "lastDonationDate": "2026-02-18",
+      "available": false,
+      "distance": "2.8 km"
+    },
+    {
+      "id": "d7",
+      "name": "Meera Nair",
+      "bloodGroup": "O-",
+      "city": "Bengaluru",
+      "phone": "+91 81234 56780",
+      "email": "meera.nair@example.com",
+      "lastDonationDate": "2026-05-20",
+      "available": true,
+      "distance": "6 km"
+    },
+    {
+      "id": "d1780983744769",
+      "name": "SARAN SENTHILKUMAR",
+      "bloodGroup": "B+",
+      "city": "Bengaluru",
+      "phone": "+919486050286",
+      "email": "sarantech587@gmail.com",
+      "lastDonationDate": "2026-02-05",
+      "available": true,
+      "distance": "2.1 km"
+    },
+    {
+      "id": "d1780985834329",
+      "name": "raja surya ",
+      "bloodGroup": "A+",
+      "city": "Chennai",
+      "phone": "9942503164",
+      "email": "rajasurya@gmail.com",
+      "lastDonationDate": "2026-04-05",
+      "available": true,
+      "distance": "4.2 km"
+    }
+  ],
+  "requests": [
+    {
+      "id": "r1",
+      "patientName": "Aarav Mehta (Trauma Patient)",
+      "bloodGroup": "O-",
+      "units": 2,
+      "hospital": "Apollo Hospital",
+      "city": "Bengaluru",
+      "contact": "+91 90000 11111",
+      "urgency": "Critical",
+      "description": "Severe road accident victim. Immediate transfusion required within hours. Please contact urgently.",
+      "unitsFulfilled": 0,
+      "createdAt": "2026-06-09T10:30:00Z"
+    },
+    {
+      "id": "r2",
+      "patientName": "Kavitha Reddy",
+      "bloodGroup": "AB-",
+      "units": 3,
+      "hospital": "Fortis Hospital",
+      "city": "Bengaluru",
+      "contact": "+91 98888 77777",
+      "urgency": "Moderate",
+      "description": "Scheduled heart bypass surgery on Friday. Requesting backup donors.",
+      "unitsFulfilled": 1,
+      "createdAt": "2026-06-08T15:20:00Z"
+    },
+    {
+      "id": "r3",
+      "patientName": "Amit Saxena",
+      "bloodGroup": "B+",
+      "units": 4,
+      "hospital": "Max Hospital",
+      "city": "Delhi",
+      "contact": "+91 97777 66666",
+      "urgency": "Critical",
+      "description": "Patient undergoing chemotherapy. Platelets urgent support needed.",
+      "unitsFulfilled": 0,
+      "createdAt": "2026-06-09T08:15:00Z"
+    }
+  ]
+}
