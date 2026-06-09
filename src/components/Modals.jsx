@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Heart, ShieldAlert, Phone, Send, Info } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad', 'Kolkata', 'Pune', 'Ahmedabad'];
 
@@ -337,7 +339,7 @@ export function ContactModal({ isOpen, onClose, donor }) {
   const handleNotify = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/donors/${donor.id}/contact`, {
+      const response = await fetch(`${API_BASE}/api/donors/${donor.id}/contact`, {
         method: 'POST'
       });
       if (response.ok) {

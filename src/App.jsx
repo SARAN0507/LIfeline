@@ -8,6 +8,8 @@ import SearchLayout from './components/SearchLayout';
 import Footer from './components/Footer';
 import { RegisterModal, PostRequestModal, ContactModal } from './components/Modals';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 export default function App() {
   // Application view state: 'home' | 'search'
   const [currentView, setCurrentView] = useState('home');
@@ -38,19 +40,19 @@ export default function App() {
   // Fetch initial stats, donors, and requests from Express backend
   const fetchData = async () => {
     try {
-      const statsRes = await fetch('/api/stats');
+      const statsRes = await fetch(`${API_BASE}/api/stats`);
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setStats(statsData);
       }
 
-      const donorsRes = await fetch('/api/donors');
+      const donorsRes = await fetch(`${API_BASE}/api/donors`);
       if (donorsRes.ok) {
         const donorsData = await donorsRes.json();
         setDonors(donorsData);
       }
 
-      const reqRes = await fetch('/api/requests');
+      const reqRes = await fetch(`${API_BASE}/api/requests`);
       if (reqRes.ok) {
         const reqData = await reqRes.json();
         setRequests(reqData);
@@ -67,7 +69,7 @@ export default function App() {
   // Handle donor registration
   const handleRegisterDonorSubmit = async (formData) => {
     try {
-      const res = await fetch('/api/donors', {
+      const res = await fetch(`${API_BASE}/api/donors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -88,7 +90,7 @@ export default function App() {
   // Handle posting urgent request
   const handlePostRequestSubmit = async (formData) => {
     try {
-      const res = await fetch('/api/requests', {
+      const res = await fetch(`${API_BASE}/api/requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -114,7 +116,7 @@ export default function App() {
   // Handle responding to a request (fulfilling a unit)
   const handleRespondRequest = async (request) => {
     try {
-      const res = await fetch(`/api/requests/${request.id}/respond`, {
+      const res = await fetch(`${API_BASE}/api/requests/${request.id}/respond`, {
         method: 'POST'
       });
       if (res.ok) {
