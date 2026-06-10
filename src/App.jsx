@@ -182,9 +182,18 @@ export default function App() {
 
   // Handle responding to a request (fulfilling a unit)
   const handleRespondRequest = async (request) => {
+    if (!user) {
+      alert("Please Sign In or Create an Account first to help supply blood.");
+      setIsAuthOpen(true);
+      return;
+    }
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/api/requests/${request.id}/respond`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
       if (res.ok) {
         alert(`Thank you for responding to help ${request.patientName}! One unit marked as supplied.`);
@@ -208,17 +217,22 @@ export default function App() {
 
   // User clicks "Contact" on a donor card
   const handleContactDonor = (donor) => {
+    if (!user) {
+      alert("Please Sign In or Create an Account first to contact a donor.");
+      setIsAuthOpen(true);
+      return;
+    }
     setSelectedDonor(donor);
     setIsContactOpen(true);
   };
 
-  // Find the primary critical request to display on the landing page (O- Apollo Bengaluru request)
+  // Find the primary critical request to display on the landing page (O- Apollo Chennai request)
   const criticalRequest = requests.find(r => r.urgency === 'Critical' && r.bloodGroup === 'O-') || requests[0];
   
-  // Find matching O- available donors in Bengaluru
+  // Find matching O- available donors in Chennai
   const matchingDonors = donors.filter(d => 
     d.bloodGroup === 'O-' && 
-    d.city.toLowerCase() === 'bengaluru' && 
+    d.city.toLowerCase() === 'chennai' && 
     d.available
   );
 

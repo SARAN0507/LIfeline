@@ -129,13 +129,13 @@ async function seedDatabase() {
     if (donorCount === 0) {
       console.log("Seeding default donors in MongoDB...");
       await Donor.create([
-        { name: "Ravi Kumar", bloodGroup: "O-", city: "Bengaluru", phone: "+91 98765 43210", email: "ravi.kumar@example.com", lastDonationDate: "2026-03-10", available: true, distance: "2 km" },
-        { name: "Anita Sharma", bloodGroup: "O-", city: "Bengaluru", phone: "+91 87654 32109", email: "anita.s@example.com", lastDonationDate: "2026-04-15", available: true, distance: "3 km" },
-        { name: "Vikram Singh", bloodGroup: "A+", city: "Bengaluru", phone: "+91 76543 21098", email: "vikram.s@example.com", lastDonationDate: "2026-05-01", available: true, distance: "4 km" },
-        { name: "Priyanka Patel", bloodGroup: "B+", city: "Mumbai", phone: "+91 91234 56789", email: "priyanka.p@example.com", lastDonationDate: "2025-12-12", available: true, distance: "1.5 km" },
-        { name: "Rahul Verma", bloodGroup: "AB+", city: "Delhi", phone: "+91 99887 76655", email: "rahul.v@example.com", lastDonationDate: "2026-01-20", available: true, distance: "5 km" },
-        { name: "Siddharth Das", bloodGroup: "O+", city: "Bengaluru", phone: "+91 94432 12345", email: "sid.das@example.com", lastDonationDate: "2026-02-18", available: false, distance: "2.8 km" },
-        { name: "Meera Nair", bloodGroup: "O-", city: "Bengaluru", phone: "+91 81234 56780", email: "meera.nair@example.com", lastDonationDate: "2026-05-20", available: true, distance: "6 km" }
+        { name: "Ravi Kumar", bloodGroup: "O-", city: "Chennai", phone: "+91 98765 43210", email: "ravi.kumar@example.com", lastDonationDate: "2026-03-10", available: true, distance: "2 km" },
+        { name: "Anita Sharma", bloodGroup: "O-", city: "Chennai", phone: "+91 87654 32109", email: "anita.s@example.com", lastDonationDate: "2026-04-15", available: true, distance: "3 km" },
+        { name: "Vikram Singh", bloodGroup: "A+", city: "Coimbatore", phone: "+91 76543 21098", email: "vikram.s@example.com", lastDonationDate: "2026-05-01", available: true, distance: "4 km" },
+        { name: "Priyanka Patel", bloodGroup: "B+", city: "Madurai", phone: "+91 91234 56789", email: "priyanka.p@example.com", lastDonationDate: "2025-12-12", available: true, distance: "1.5 km" },
+        { name: "Rahul Verma", bloodGroup: "AB+", city: "Salem", phone: "+91 99887 76655", email: "rahul.v@example.com", lastDonationDate: "2026-01-20", available: true, distance: "5 km" },
+        { name: "Siddharth Das", bloodGroup: "O+", city: "Tiruchirappalli", phone: "+91 94432 12345", email: "sid.das@example.com", lastDonationDate: "2026-02-18", available: false, distance: "2.8 km" },
+        { name: "Meera Nair", bloodGroup: "O-", city: "Chennai", phone: "+91 81234 56780", email: "meera.nair@example.com", lastDonationDate: "2026-05-20", available: true, distance: "6 km" }
       ]);
     }
 
@@ -143,9 +143,9 @@ async function seedDatabase() {
     if (requestCount === 0) {
       console.log("Seeding default emergency requests in MongoDB...");
       await Request.create([
-        { patientName: "Aarav Mehta (Trauma Patient)", bloodGroup: "O-", units: 2, hospital: "Apollo Hospital", city: "Bengaluru", contact: "+91 90000 11111", urgency: "Critical", description: "Severe road accident victim. Immediate transfusion required within hours. Please contact urgently.", unitsFulfilled: 0 },
-        { patientName: "Kavitha Reddy", bloodGroup: "AB-", units: 3, hospital: "Fortis Hospital", city: "Bengaluru", contact: "+91 98888 77777", urgency: "Moderate", description: "Scheduled heart bypass surgery on Friday. Requesting backup donors.", unitsFulfilled: 1 },
-        { patientName: "Amit Saxena", bloodGroup: "B+", units: 4, hospital: "Max Hospital", city: "Delhi", contact: "+91 97777 66666", urgency: "Critical", description: "Patient undergoing chemotherapy. Platelets urgent support needed.", unitsFulfilled: 0 }
+        { patientName: "Aarav Mehta (Trauma Patient)", bloodGroup: "O-", units: 2, hospital: "Apollo Hospital", city: "Chennai", contact: "+91 90000 11111", urgency: "Critical", description: "Severe road accident victim. Immediate transfusion required within hours. Please contact urgently.", unitsFulfilled: 0 },
+        { patientName: "Kavitha Reddy", bloodGroup: "AB-", units: 3, hospital: "Fortis Hospital", city: "Coimbatore", contact: "+91 98888 77777", urgency: "Moderate", description: "Scheduled heart bypass surgery on Friday. Requesting backup donors.", unitsFulfilled: 1 },
+        { patientName: "Amit Saxena", bloodGroup: "B+", units: 4, hospital: "Kauvery Hospital", city: "Tiruchirappalli", contact: "+91 97777 66666", urgency: "Critical", description: "Patient undergoing chemotherapy. Platelets urgent support needed.", unitsFulfilled: 0 }
       ]);
     }
   } catch (err) {
@@ -313,6 +313,24 @@ app.get('/api/auth/me', async (req, res) => {
 
 // --- CORE APP ENDPOINTS ---
 
+// JWT Authentication verification middleware
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: "Access denied. Sign in required." });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: "Invalid or expired session token." });
+  }
+};
+
 // Get impact and real-time statistics
 app.get('/api/stats', async (req, res) => {
   try {
@@ -382,7 +400,7 @@ app.get('/api/donors', async (req, res) => {
 });
 
 // Register a new donor
-app.post('/api/donors', async (req, res) => {
+app.post('/api/donors', authenticateToken, async (req, res) => {
   try {
     const { name, bloodGroup, city, phone, email, lastDonationDate, available } = req.body;
 
@@ -454,7 +472,7 @@ app.get('/api/requests', async (req, res) => {
 });
 
 // Post an urgent request
-app.post('/api/requests', async (req, res) => {
+app.post('/api/requests', authenticateToken, async (req, res) => {
   try {
     const { patientName, bloodGroup, units, hospital, city, contact, urgency, description } = req.body;
 
@@ -494,11 +512,14 @@ app.post('/api/requests', async (req, res) => {
 });
 
 // Update/Respond to a request (fulfill units)
-app.post('/api/requests/:id/respond', async (req, res) => {
+app.post('/api/requests/:id/respond', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
     if (useMongo && mongoose.connection.readyState === 1) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: "Invalid request ID format." });
+      }
       const request = await Request.findById(id);
       if (!request) {
         return res.status(404).json({ error: "Emergency request not found" });
@@ -531,13 +552,16 @@ app.post('/api/requests/:id/respond', async (req, res) => {
 });
 
 // Contact donor (log action)
-app.post('/api/donors/:id/contact', async (req, res) => {
+app.post('/api/donors/:id/contact', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     let donorName = "";
     let donorPhone = "";
 
     if (useMongo && mongoose.connection.readyState === 1) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: "Invalid donor ID format." });
+      }
       const donor = await Donor.findById(id);
       if (!donor) return res.status(404).json({ error: "Donor not found" });
       donorName = donor.name;

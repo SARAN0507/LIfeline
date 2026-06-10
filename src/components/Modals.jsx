@@ -4,14 +4,43 @@ import { X, Heart, ShieldAlert, Phone, Send, Info } from 'lucide-react';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const CITIES = ['Bengaluru', 'Mumbai', 'Delhi', 'Chennai', 'Hyderabad', 'Kolkata', 'Pune', 'Ahmedabad'];
+const CITIES = [
+  'Ariyalur', 'Chengalpattu', 'Chennai', 'Coimbatore', 'Cuddalore', 
+  'Dharmapuri', 'Dindigul', 'Erode', 'Kallakurichi', 'Kanchipuram', 
+  'Kanyakumari', 'Karur', 'Krishnagiri', 'Madurai', 'Mayiladuthurai', 
+  'Nagapattinam', 'Namakkal', 'Nilgiris', 'Perambalur', 'Pudukkottai', 
+  'Ramanathapuram', 'Ranipet', 'Salem', 'Sivagangai', 'Tenkasi', 
+  'Thanjavur', 'Theni', 'Thoothukudi', 'Tiruchirappalli', 'Tirunelveli', 
+  'Tirupathur', 'Tiruppur', 'Tiruvallur', 'Tiruvannamalai', 'Tiruvarur', 
+  'Vellore', 'Viluppuram', 'Virudhunagar'
+];
+
+const getEligibilityInfo = (dateStr) => {
+  if (!dateStr) return { eligible: true, daysLeft: 0 };
+  const lastDate = new Date(dateStr);
+  const today = new Date();
+  lastDate.setHours(0,0,0,0);
+  today.setHours(0,0,0,0);
+  
+  const diffTime = today.getTime() - lastDate.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) {
+    return { eligible: true, daysLeft: 0 };
+  }
+  
+  if (diffDays < 90) {
+    return { eligible: false, daysLeft: 90 - diffDays };
+  }
+  return { eligible: true, daysLeft: 0 };
+};
 
 // 1. REGISTER DONOR MODAL
 export function RegisterModal({ isOpen, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
     name: '',
     bloodGroup: 'O-',
-    city: 'Bengaluru',
+    city: 'Chennai',
     phone: '',
     email: '',
     lastDonationDate: '',
@@ -21,17 +50,33 @@ export function RegisterModal({ isOpen, onClose, onSubmit }) {
 
   if (!isOpen) return null;
 
+  const { eligible, daysLeft } = getEligibilityInfo(formData.lastDonationDate);
+
+  const handleDateChange = (dateVal) => {
+    const { eligible: isEligible } = getEligibilityInfo(dateVal);
+    setFormData(prev => ({
+      ...prev,
+      lastDonationDate: dateVal,
+      available: isEligible ? prev.available : false
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await onSubmit(formData);
+    const { eligible: isEligible } = getEligibilityInfo(formData.lastDonationDate);
+    const finalData = {
+      ...formData,
+      available: isEligible ? formData.available : false
+    };
+    await onSubmit(finalData);
     setLoading(false);
     onClose();
     // Reset form
     setFormData({
       name: '',
       bloodGroup: 'O-',
-      city: 'Bengaluru',
+      city: 'Chennai',
       phone: '',
       email: '',
       lastDonationDate: '',
@@ -126,18 +171,52 @@ export function RegisterModal({ isOpen, onClose, onSubmit }) {
                   type="date"
                   className="input-control"
                   value={formData.lastDonationDate}
-                  onChange={(e) => setFormData({ ...formData, lastDonationDate: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={(e) => handleDateChange(e.target.value)}
                 />
               </div>
+
+              {!eligible && (
+                <div 
+                  style={{
+                    background: '#FFF8E6',
+                    border: '1px solid #FFE0B2',
+                    borderRadius: '8px',
+                    padding: '0.8rem',
+                    color: '#B78103',
+                    fontSize: '0.85rem',
+                    fontWeight: '500',
+                    marginTop: '0.5rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <Info size={16} style={{ flexShrink: 0 }} />
+                  <span>
+                    You donated blood {90 - daysLeft} days ago. You will be eligible to donate again in <strong>{daysLeft} days</strong>. Availability locked to busy.
+                  </span>
+                </div>
+              )}
 
               <div className="checkbox-group">
                 <input
                   type="checkbox"
                   id="avail-check"
-                  checked={formData.available}
+                  checked={eligible ? formData.available : false}
+                  disabled={!eligible}
                   onChange={(e) => setFormData({ ...formData, available: e.target.checked })}
                 />
-                <label htmlFor="avail-check" style={{ fontWeight: '500', fontSize: '0.9rem' }}>
+                <label 
+                  htmlFor="avail-check" 
+                  style={{ 
+                    fontWeight: '500', 
+                    fontSize: '0.9rem', 
+                    color: !eligible ? 'var(--text-muted)' : 'inherit',
+                    cursor: !eligible ? 'not-allowed' : 'pointer'
+                  }}
+                >
                   I am currently fit & available to donate blood immediately
                 </label>
               </div>
@@ -165,7 +244,7 @@ export function PostRequestModal({ isOpen, onClose, onSubmit }) {
     bloodGroup: 'O-',
     units: 2,
     hospital: '',
-    city: 'Bengaluru',
+    city: 'Chennai',
     contact: '',
     urgency: 'Critical',
     description: ''
@@ -186,7 +265,7 @@ export function PostRequestModal({ isOpen, onClose, onSubmit }) {
       bloodGroup: 'O-',
       units: 2,
       hospital: '',
-      city: 'Bengaluru',
+      city: 'Chennai',
       contact: '',
       urgency: 'Critical',
       description: ''
@@ -339,8 +418,13 @@ export function ContactModal({ isOpen, onClose, donor }) {
   const handleNotify = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('lifeline_token');
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch(`${API_BASE}/api/donors/${donor.id}/contact`, {
-        method: 'POST'
+        method: 'POST',
+        headers
       });
       if (response.ok) {
         setNotified(true);
