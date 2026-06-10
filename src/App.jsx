@@ -6,7 +6,7 @@ import Workflow from './components/Workflow';
 import FeatureRequestSection from './components/FeatureRequestSection';
 import SearchLayout from './components/SearchLayout';
 import Footer from './components/Footer';
-import { RegisterModal, PostRequestModal, ContactModal } from './components/Modals';
+import { RegisterModal, PostRequestModal, ContactModal, AuthModal } from './components/Modals';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -37,6 +37,14 @@ export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState(null);
 
+  // Authentication states
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('lifeline_user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('lifeline_token') || null);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+
   // Fetch initial stats, donors, and requests from Express backend
   const fetchData = async () => {
     try {
@@ -62,16 +70,72 @@ export default function App() {
     }
   };
 
+  // Verify session token on mount
   useEffect(() => {
+    const verifySession = async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const userData = await res.json();
+          setUser(userData);
+          localStorage.setItem('lifeline_user', JSON.stringify(userData));
+        } else {
+          handleLogout();
+        }
+      } catch (err) {
+        console.error("Session verification failed:", err);
+      }
+    };
+
     fetchData();
-  }, []);
+    verifySession();
+  }, [token]);
+
+  const handleAuthSuccess = (userData, userToken) => {
+    setUser(userData);
+    setToken(userToken);
+    localStorage.setItem('lifeline_token', userToken);
+    localStorage.setItem('lifeline_user', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('lifeline_token');
+    localStorage.removeItem('lifeline_user');
+    setCurrentView('home');
+  };
+
+  const triggerRegisterModal = () => {
+    if (!user) {
+      alert("Please Sign In or Create an Account first to register as a voluntary donor.");
+      setIsAuthOpen(true);
+    } else {
+      setIsRegisterOpen(true);
+    }
+  };
+
+  const triggerPostRequestModal = () => {
+    if (!user) {
+      alert("Please Sign In or Create an Account first to broadcast an emergency request.");
+      setIsAuthOpen(true);
+    } else {
+      setIsRequestOpen(true);
+    }
+  };
 
   // Handle donor registration
   const handleRegisterDonorSubmit = async (formData) => {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/api/donors`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(formData)
       });
       if (res.ok) {
@@ -90,9 +154,12 @@ export default function App() {
   // Handle posting urgent request
   const handlePostRequestSubmit = async (formData) => {
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE}/api/requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(formData)
       });
       if (res.ok) {
@@ -159,9 +226,12 @@ export default function App() {
     <div>
       {/* Sticky Navbar */}
       <Navbar 
-        onRegisterClick={() => setIsRegisterOpen(true)} 
+        onRegisterClick={triggerRegisterModal} 
         onSearchClick={() => { setCurrentView('search'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-        onPostRequestClick={() => setIsRequestOpen(true)}
+        onPostRequestClick={triggerPostRequestModal}
+        user={user}
+        onAuthClick={() => setIsAuthOpen(true)}
+        onLogout={handleLogout}
       />
 
       {/* Main View Router */}
@@ -169,7 +239,7 @@ export default function App() {
         <>
           {/* Landing view components */}
           <Hero 
-            onRegisterClick={() => setIsRegisterOpen(true)} 
+            onRegisterClick={triggerRegisterModal} 
             onSearchClick={(group) => handleBloodGroupSelect(group)}
             onBloodGroupSelect={handleBloodGroupSelect}
           />
@@ -193,12 +263,12 @@ export default function App() {
           onBack={() => setCurrentView('home')}
           onContactDonor={handleContactDonor}
           onRespondRequest={handleRespondRequest}
-          onPostRequestClick={() => setIsRequestOpen(true)}
+          onPostRequestClick={triggerPostRequestModal}
         />
       )}
 
       {/* Footer CTA & Brand links */}
-      <Footer onRegisterClick={() => setIsRegisterOpen(true)} />
+      <Footer onRegisterClick={triggerRegisterModal} />
 
       {/* Forms & Coordination modals */}
       <RegisterModal 
@@ -207,7 +277,7 @@ export default function App() {
         onSubmit={handleRegisterDonorSubmit}
       />
       <PostRequestModal 
-        isOpen={isRequestOpen || isRegisterOpen === false && false /* can open via custom outline button */}
+        isOpen={isRequestOpen}
         onClose={() => setIsRequestOpen(false)}
         onSubmit={handlePostRequestSubmit}
       />
@@ -215,7 +285,7 @@ export default function App() {
       <button 
         style={{ display: 'none' }} 
         id="trigger-request-modal" 
-        onClick={() => setIsRequestOpen(true)}
+        onClick={triggerPostRequestModal}
       ></button>
 
       {/* Modals for coordinate contact */}
@@ -223,6 +293,13 @@ export default function App() {
         isOpen={isContactOpen} 
         onClose={() => setIsContactOpen(false)}
         donor={selectedDonor}
+      />
+
+      {/* User Auth Modal */}
+      <AuthModal 
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
       />
     </div>
   );

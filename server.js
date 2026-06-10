@@ -5,6 +5,10 @@ import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'lifeline_super_secret_jwt_key_2026';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -47,13 +51,15 @@ mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 4000 })
 function readDatabase() {
   try {
     if (!fs.existsSync(DB_FILE)) {
-      return { donors: [], requests: [] };
+      return { donors: [], requests: [], users: [] };
     }
     const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data);
+    const db = JSON.parse(data);
+    if (!db.users) db.users = [];
+    return db;
   } catch (error) {
     console.error("Error reading db.json database file:", error);
-    return { donors: [], requests: [] };
+    return { donors: [], requests: [], users: [] };
   }
 }
 
@@ -103,6 +109,19 @@ const requestSchema = new mongoose.Schema({
 
 const Request = mongoose.model('Request', requestSchema);
 
+// 3. User Schema
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true },
+  timestamps: true
+});
+
+const User = mongoose.model('User', userSchema);
+
 // --- SEED DATABASE FUNCTION ---
 async function seedDatabase() {
   try {
@@ -135,6 +154,164 @@ async function seedDatabase() {
 }
 
 // --- API ROUTES ---
+
+// --- AUTH ENDPOINTS ---
+
+// Register User
+app.post('/api/auth/register', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "Missing required fields (name, email, password)" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check if user already exists
+    let userExists = false;
+    if (useMongo && mongoose.connection.readyState === 1) {
+      const existingUser = await User.findOne({ email: cleanEmail });
+      userExists = !!existingUser;
+    } else {
+      const db = readDatabase();
+      userExists = db.users.some(u => u.email === cleanEmail);
+    }
+
+    if (userExists) {
+      return res.status(400).json({ error: "Email is already registered" });
+    }
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    let newUser = {};
+    if (useMongo && mongoose.connection.readyState === 1) {
+      newUser = await User.create({
+        name,
+        email: cleanEmail,
+        password: hashedPassword
+      });
+    } else {
+      const db = readDatabase();
+      newUser = {
+        id: 'u' + Date.now(),
+        name,
+        email: cleanEmail,
+        password: hashedPassword,
+        createdAt: new Date().toISOString()
+      };
+      db.users.push(newUser);
+      writeDatabase(db);
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: newUser.id || newUser._id, email: newUser.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser.id || newUser._id,
+        name: newUser.name,
+        email: newUser.email
+      }
+    });
+  } catch (err) {
+    console.error("Registration error:", err);
+    res.status(500).json({ error: "Registration failed" });
+  }
+});
+
+// Login User
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Missing email or password" });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    let user = null;
+
+    if (useMongo && mongoose.connection.readyState === 1) {
+      user = await User.findOne({ email: cleanEmail });
+    } else {
+      const db = readDatabase();
+      user = db.users.find(u => u.email === cleanEmail);
+    }
+
+    if (!user) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // Check password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.id || user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id || user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Login failed" });
+  }
+});
+
+// Get Current User Profile (JWT Protected)
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ error: "Access denied. No token provided." });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    let user = null;
+    if (useMongo && mongoose.connection.readyState === 1) {
+      user = await User.findById(decoded.userId).select('-password');
+    } else {
+      const db = readDatabase();
+      user = db.users.find(u => u.id === decoded.userId);
+      if (user) {
+        const { password, ...userWithoutPassword } = user;
+        user = userWithoutPassword;
+      }
+    }
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(user);
+  } catch (err) {
+    res.status(401).json({ error: "Invalid or expired session token." });
+  }
+});
+
+// --- CORE APP ENDPOINTS ---
 
 // Get impact and real-time statistics
 app.get('/api/stats', async (req, res) => {

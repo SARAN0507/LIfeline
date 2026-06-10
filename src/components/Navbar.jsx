@@ -1,7 +1,7 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 
-export default function Navbar({ onRegisterClick, onSearchClick }) {
+export default function Navbar({ onRegisterClick, onSearchClick, onPostRequestClick, user, onAuthClick, onLogout }) {
   return (
     <nav className="navbar-sticky">
       <div className="container navbar-container">
@@ -45,12 +45,28 @@ export default function Navbar({ onRegisterClick, onSearchClick }) {
           }}>
             Post Request ⚡
           </a>
-          <a href="#signin" className="nav-link" onClick={(e) => {
-            e.preventDefault();
-            alert("Sign In functionality simulated. You are logged in as administrator.");
-          }}>
-            Sign in
-          </a>
+          
+          {user ? (
+            <>
+              <span style={{ fontWeight: '600', fontSize: '0.95rem', color: 'var(--text-dark)' }}>
+                Hi, {user.name.split(' ')[0]}
+              </span>
+              <a href="#logout" className="nav-link" style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '500' }} onClick={(e) => {
+                e.preventDefault();
+                onLogout();
+              }}>
+                Sign out
+              </a>
+            </>
+          ) : (
+            <a href="#signin" className="nav-link" onClick={(e) => {
+              e.preventDefault();
+              onAuthClick();
+            }}>
+              Sign in
+            </a>
+          )}
+          
           <button className="btn btn-primary" onClick={onRegisterClick}>
             Get started
           </button>

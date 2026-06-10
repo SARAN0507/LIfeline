@@ -468,3 +468,209 @@ export function ContactModal({ isOpen, onClose, donor }) {
     </div>
   );
 }
+
+// 4. SIGN IN & SIGN UP AUTH MODAL
+export function AuthModal({ isOpen, onClose, onAuthSuccess }) {
+  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    if (mode === 'signup' && formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+      const payload = mode === 'login' 
+        ? { email: formData.email, password: formData.password }
+        : { name: formData.name, email: formData.email, password: formData.password };
+
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        onAuthSuccess(data.user, data.token);
+        onClose();
+        // Reset form
+        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+      } else {
+        setError(data.error || "Authentication failed");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Network error. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content" style={{ maxWidth: '440px' }}>
+        {/* Tab Header */}
+        <div style={{ display: 'flex', borderBottom: '1px solid rgba(0,0,0,0.05)', position: 'relative' }}>
+          <button 
+            type="button" 
+            style={{ 
+              flex: 1, 
+              padding: '1.2rem', 
+              background: mode === 'login' ? 'var(--card-bg)' : '#FAFAFA',
+              border: 'none',
+              fontFamily: 'var(--font-heading)',
+              fontWeight: '700',
+              fontSize: '1.1rem',
+              color: mode === 'login' ? 'var(--primary-red)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              borderBottom: mode === 'login' ? '3px solid var(--primary-red)' : 'none'
+            }}
+            onClick={() => { setMode('login'); setError(''); }}
+          >
+            Sign In
+          </button>
+          <button 
+            type="button" 
+            style={{ 
+              flex: 1, 
+              padding: '1.2rem', 
+              background: mode === 'signup' ? 'var(--card-bg)' : '#FAFAFA',
+              border: 'none',
+              fontFamily: 'var(--font-heading)',
+              fontWeight: '700',
+              fontSize: '1.1rem',
+              color: mode === 'signup' ? 'var(--primary-red)' : 'var(--text-muted)',
+              cursor: 'pointer',
+              borderBottom: mode === 'signup' ? '3px solid var(--primary-red)' : 'none'
+            }}
+            onClick={() => { setMode('signup'); setError(''); }}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <button 
+          type="button"
+          className="btn-close-modal" 
+          style={{ position: 'absolute', right: '15px', top: '15px', zIndex: 10 }}
+          onClick={onClose}
+        >
+          <X size={18} />
+        </button>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body" style={{ padding: '2rem' }}>
+            {error && (
+              <div 
+                style={{ 
+                  background: '#FFEBEB', 
+                  border: '1px solid rgba(217,4,41,0.15)', 
+                  color: 'var(--primary-red)',
+                  padding: '0.8rem',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  fontWeight: '600',
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            <div className="modal-form">
+              {mode === 'signup' && (
+                <div className="form-group">
+                  <label>Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    className="input-control"
+                    placeholder="e.g. Rahul Sharma"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+              )}
+
+              <div className="form-group">
+                <label>Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  className="input-control"
+                  placeholder="e.g. rahul@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Password *</label>
+                <input
+                  type="password"
+                  required
+                  className="input-control"
+                  placeholder="Enter secure password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+
+              {mode === 'signup' && (
+                <div className="form-group">
+                  <label>Confirm Password *</label>
+                  <input
+                    type="password"
+                    required
+                    className="input-control"
+                    placeholder="Repeat password"
+                    value={formData.confirmPassword}
+                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="modal-footer" style={{ padding: '1.5rem 2rem' }}>
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              style={{ padding: '0.6rem 1.2rem' }} 
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ padding: '0.6rem 1.2rem' }} 
+              disabled={loading}
+            >
+              {loading ? "Please wait..." : mode === 'login' ? "Sign In" : "Register"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
